@@ -1,0 +1,14 @@
+includes:
+  - ./common.yml
+
+overrides:
+  heap_range: 3
+  invocations: 10
+
+runtimes:
+  d8:
+    type: D8
+    executable: /home/wenyuz/v8-mapword/v8/out/x64.release/d8
+
+configs:
+  - d8|harness

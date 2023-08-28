@@ -1,0 +1,13 @@
+includes:
+  - ./common.yml
+
+runtimes:
+  d8:
+    type: D8
+    executable: /home/wenyuz/v8-mapword/v8/out/x64.release/d8
+
+overrides:
+  maxheap: 1024
+
+configs:
+  - d8

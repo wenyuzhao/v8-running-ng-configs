@@ -1,0 +1,17 @@
+d8:
+  octane:
+    box2d: 5
+    codeload: 152
+    crypto: 3
+    deltablue: 3
+    earleyboyer: 4
+    gameboy: 6
+    mandreel: 12
+    navierstokes: 4
+    pdfjs: 34
+    raytrace: 3
+    regexp: 6
+    richards: 3
+    splay: 32
+    typescript: 28
+    zlib: 3

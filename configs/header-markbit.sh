@@ -1,0 +1,1 @@
+running runbms -p mapword /home/wenyuz/MMTk-Dev/evaluation/results/log ./evaluation/running-configs/header-markbit.yml 12 7 &> ~/_log

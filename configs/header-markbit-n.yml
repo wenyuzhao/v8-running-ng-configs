@@ -1,0 +1,32 @@
+# running runbms -p mapword ~/MMTk-Dev/evaluation/results/log ./evaluation/running-configs/header-markbit-n.yml 12 0
+includes:
+  - ./common.yml
+
+overrides:
+  heap_range: 20
+  invocations: 10
+  suites.octane.minheap: d8-large
+
+runtimes:
+  d8:
+    type: D8
+    executable: /home/wenyuz/v8-mapword/evaluation/builds/x64.release/d8
+  d8-no-compress-ptrs:
+    type: D8
+    executable: /home/wenyuz/v8-mapword/evaluation/builds/x64.release-no-compress-ptrs/d8
+  d8-mapword:
+    type: D8
+    executable: /home/wenyuz/v8-mapword/evaluation/builds/x64.release-mapword/d8
+  d8-no-compress-ptrs-conc-mark-shared-ros:
+    type: D8
+    executable: /home/wenyuz/v8-mapword/evaluation/builds/x64.release-no-compress-ptrs-conc-mark-shared-ros/d8
+  d8-header-markbit:
+    type: D8
+    executable: /home/wenyuz/v8-mapword/evaluation/builds/x64.release-header-markbit/d8
+
+configs:
+  - d8|harness|mn-1
+  - d8-no-compress-ptrs|harness|mn-1
+  - d8-mapword|harness|mn-1
+  - d8-no-compress-ptrs-conc-mark-shared-ros|harness|mn-1
+  - d8-header-markbit|harness|mn-1

@@ -1,0 +1,80 @@
+includes:
+  - "$RUNNING_NG_PACKAGE_DATA/base/runbms.yml"
+
+suites:
+  octane:
+    type: Octane
+    path: /home/wenyuz/v8-mapword/octane
+    wrapper: /home/wenyuz/v8-mapword/evaluation/harness/octane.js
+    minheap: d8
+    minheap_values:
+      d8:
+        box2d: 5
+        codeload: 152
+        crypto: 3
+        deltablue: 3
+        earleyboyer: 4
+        gameboy: 6
+        mandreel: 12
+        navierstokes: 4
+        pdfjs: 34
+        raytrace: 3
+        regexp: 6
+        richards: 3
+        splay: 32
+        typescript: 28
+        zlib: 3
+      d8-large:
+        box2d: 1024
+        codeload: 1024
+        crypto: 1024
+        deltablue: 1024
+        earleyboyer: 1024
+        gameboy: 1024
+        mandreel: 1024
+        navierstokes: 1024
+        pdfjs: 1024
+        raytrace: 1024
+        regexp: 1024
+        richards: 1024
+        splay: 1024
+        typescript: 1024
+        zlib: 1024
+    timing_iteration: 5
+    timeout: 60
+
+benchmarks:
+  octane:
+    # - box2d
+    - codeload
+    - crypto
+    - deltablue
+    - earleyboyer
+    - gameboy
+    - mandreel
+    - richards
+    - raytrace
+    - regexp
+    - splay
+    - navierstokes
+    - pdfjs
+    - zlib
+    - typescript
+  
+modifiers:
+  enable_harness:
+    type: JSArg
+    val: --harness
+  harness_lib:
+    type: JSArg
+    val: --harness_lib=/home/wenyuz/v8-mapword/evaluation/harness/libharness.so
+  harness:
+    type: ModifierSet
+    val: enable_harness|harness_lib
+  mn:
+    type: JSArg
+    val: --max_semi_space_size={0}
+
+overrides:
+  heap_range: 3
+  invocations: 10
