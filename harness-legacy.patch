@@ -1,0 +1,139 @@
+diff --git a/src/d8/d8.cc b/src/d8/d8.cc
+index c709bf852c..71715f9ec1 100644
+--- a/src/d8/d8.cc
++++ b/src/d8/d8.cc
+@@ -69,6 +69,7 @@
+ #endif  // V8_INTL_SUPPORT
+ 
+ #ifdef V8_OS_LINUX
++#include <dlfcn.h>
+ #include <sys/mman.h>  // For MultiMappedAllocator.
+ #endif
+ 
+@@ -323,6 +324,31 @@ class MultiMappedAllocator : public ArrayBufferAllocatorBase {
+   base::Mutex regions_mutex_;
+ };
+ 
++class Harness {
++ public:
++  void Prepare() {
++    if (!internal::FLAG_harness) return;
++    harness_handle_ =
++        dlopen(internal::FLAG_harness_lib, RTLD_NOW | RTLD_GLOBAL);
++    harness_begin_ =
++        (void (*)(size_t, ...))dlsym(harness_handle_, "harness_begin");
++    harness_end_ = (void (*)(size_t, ...))dlsym(harness_handle_, "harness_end");
++  }
++  template <typename... Args>
++  void HarnessBegin(Args... args) {
++    harness_begin_(sizeof...(args) >> 1, args...);
++  }
++  template <typename... Args>
++  void HarnessEnd(Args... args) {
++    harness_end_(sizeof...(args) >> 1, args...);
++  }
++
++ private:
++  void* harness_handle_ = nullptr;
++  void (*harness_begin_)(size_t, ...) = nullptr;
++  void (*harness_end_)(size_t, ...) = nullptr;
++} harness;
++
+ #endif  // V8_OS_LINUX
+ 
+ v8::Platform* g_default_platform;
+@@ -1835,6 +1861,26 @@ void Shell::Version(const v8::FunctionCallbackInfo<v8::Value>& args) {
+           .ToLocalChecked());
+ }
+ 
++void Shell::HarnessPrepare(const v8::FunctionCallbackInfo<v8::Value>& args) {
++  harness.Prepare();
++}
++
++void Shell::HarnessBegin(const v8::FunctionCallbackInfo<v8::Value>& args) {
++  if (!internal::FLAG_harness) return;
++  auto isolate = reinterpret_cast<internal::Isolate*>(args.GetIsolate());
++  auto heap = isolate->heap();
++  harness.HarnessBegin("GC", static_cast<double>(heap->gc_count()), "time.gc",
++                       static_cast<double>(heap->total_gc_time_ms()));
++}
++
++void Shell::HarnessEnd(const v8::FunctionCallbackInfo<v8::Value>& args) {
++  if (!internal::FLAG_harness) return;
++  auto isolate = reinterpret_cast<internal::Isolate*>(args.GetIsolate());
++  auto heap = isolate->heap();
++  harness.HarnessEnd("GC", static_cast<double>(heap->gc_count()), "time.gc",
++                     static_cast<double>(heap->total_gc_time_ms()));
++}
++
+ #ifdef V8_FUZZILLI
+ 
+ // We have to assume that the fuzzer will be able to call this function e.g. by
+@@ -2089,6 +2135,13 @@ Local<ObjectTemplate> Shell::CreateGlobalTemplate(Isolate* isolate) {
+   global_template->Set(Symbol::GetToStringTag(isolate),
+                        String::NewFromUtf8Literal(isolate, "global"));
+ 
++  global_template->Set(isolate, "harnessPrepare",
++                       FunctionTemplate::New(isolate, HarnessPrepare));
++  global_template->Set(isolate, "harnessBegin",
++                       FunctionTemplate::New(isolate, HarnessBegin));
++  global_template->Set(isolate, "harnessEnd",
++                       FunctionTemplate::New(isolate, HarnessEnd));
++
+   // Bind the Realm object.
+   Local<ObjectTemplate> realm_template = ObjectTemplate::New(isolate);
+   realm_template->Set(isolate, "current",
+diff --git a/src/d8/d8.h b/src/d8/d8.h
+index 9feb845237..572d377f2d 100644
+--- a/src/d8/d8.h
++++ b/src/d8/d8.h
+@@ -414,6 +414,9 @@ class Shell : public i::AllStatic {
+   static void QuitOnce(v8::FunctionCallbackInfo<v8::Value>* args);
+   static void Quit(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void Version(const v8::FunctionCallbackInfo<v8::Value>& args);
++  static void HarnessPrepare(const v8::FunctionCallbackInfo<v8::Value>& args);
++  static void HarnessBegin(const v8::FunctionCallbackInfo<v8::Value>& args);
++  static void HarnessEnd(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void Read(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void ReadBuffer(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static Local<String> ReadFromStdin(Isolate* isolate);
+diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
+index ffb5317be4..e030d0288c 100644
+--- a/src/flags/flag-definitions.h
++++ b/src/flags/flag-definitions.h
+@@ -886,6 +886,9 @@ DEFINE_BOOL(trace_idle_notification, false,
+             "print one trace line following each idle notification")
+ DEFINE_BOOL(trace_idle_notification_verbose, false,
+             "prints the heap state used by the idle notification")
++DEFINE_BOOL(harness, false, "enable gc harness")
++DEFINE_STRING(harness_lib, "",
++              "specify the dynamically-loaded gc harness library")
+ DEFINE_BOOL(trace_gc_verbose, false,
+             "print more details following each garbage collection")
+ DEFINE_IMPLICATION(trace_gc_verbose, trace_gc)
+diff --git a/src/heap/heap.cc b/src/heap/heap.cc
+index de290c4797..81a356ec30 100644
+--- a/src/heap/heap.cc
++++ b/src/heap/heap.cc
+@@ -6100,7 +6100,7 @@ HeapObject HeapObjectIterator::NextObject() {
+ }
+ 
+ void Heap::UpdateTotalGCTime(double duration) {
+-  if (FLAG_trace_gc_verbose) {
++  if (FLAG_trace_gc_verbose || FLAG_harness) {
+     total_gc_time_ms_ += duration;
+   }
+ }
+diff --git a/src/heap/heap.h b/src/heap/heap.h
+index 0b374e819a..afedfcf639 100644
+--- a/src/heap/heap.h
++++ b/src/heap/heap.h
+@@ -1301,6 +1301,8 @@ class Heap {
+ 
+   bool is_current_gc_forced() const { return is_current_gc_forced_; }
+ 
++  double total_gc_time_ms() const { return total_gc_time_ms_; }
++
+   // Returns the size of objects residing in non-new spaces.
+   // Excludes external memory held by those objects.
+   V8_EXPORT_PRIVATE size_t OldGenerationSizeOfObjects();

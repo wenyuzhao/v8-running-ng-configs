@@ -8,7 +8,7 @@ overrides:
 runtimes:
   d8:
     type: D8
-    executable: /home/wenyuz/v8-mapword/v8/out/x64.release/d8
+    executable: /home/wenyuz/v8/v8/out/x64.release/d8
 
 configs:
   - d8|harness
