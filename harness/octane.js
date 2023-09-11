@@ -1,13 +1,14 @@
 // cd v8/running/
-// ../v8/out/x64.release/d8 --initial-heap-size=142 --max-heap-size=142 --no-lazy --predictable --predictable-gc-schedule ./bin/octane.js -- ../octane box2d 3
+// ../v8/out/x64.release/d8 --initial-heap-size=142 --max-heap-size=142 --no-lazy --predictable --predictable-gc-schedule ./bin/octane.js -- ../octane box2d 3 true
 //
-// ./v8/out/x64.release-header-markbit/d8 --harness --harness_lib=./evaluation/harness/harness.so --initial-heap-size=142 --max-heap-size=142 --no-lazy --predictable --predictable-gc-schedule ./evaluation/harness/octane.js -- ./octane box2d 30
+// ./v8/out/x64.release-header-markbit/d8 --harness --harness_lib=./evaluation/harness/harness.so --initial-heap-size=142 --max-heap-size=142 --no-lazy --predictable --predictable-gc-schedule ./evaluation/harness/octane.js -- ./octane box2d 30 true
 
 if (globalThis.harnessPrepare) harnessPrepare();
 
 const octane_dir = arguments[0];
 const benchmark_name = arguments[1];
 const iterations = arguments[2] || 1;
+const gc_before_harness = arguments[3] == "true";
 
 const base_dir = octane_dir + '/';
 
@@ -54,7 +55,13 @@ function RunOneIteration(iter, isWarmup) {
   if (isWarmup) print(`===== DaCapo ${benchmark_name} starting warmup =====`);
   else print(`===== DaCapo ${benchmark_name} starting =====`);
 
-  if (!isWarmup && globalThis.harnessBegin) harnessBegin();
+  if (!isWarmup && globalThis.harnessBegin) {
+    if (gc_before_harness) {
+        v8GC();
+        print(`GC before harness completed ...`);
+    }
+    harnessBegin();
+  }
   const startTime = new Date();
   // for (let i = 0; i < 10; i++) {
   const { time, score, latencyScore } = BenchmarkSuite.RunOnce();

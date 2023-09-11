@@ -68,9 +68,15 @@ modifiers:
   harness_lib:
     type: JSArg
     val: --harness_lib=/home/wenyuz/v8-mapword/evaluation/harness/libharness.so
+  gc_before_harness:
+    type: ProgramArg
+    val: "true"
+  expose_gc:
+    type: JSArg
+    val: --expose-gc-as=v8GC
   harness:
     type: ModifierSet
-    val: enable_harness|harness_lib
+    val: enable_harness|harness_lib|expose_gc|gc_before_harness
   mn:
     type: JSArg
     val: --max_semi_space_size={0}
