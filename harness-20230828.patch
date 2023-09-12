@@ -54,7 +54,7 @@ index 8c3997f24b8..eb4b04aebd3 100644
 +  if (!i::v8_flags.harness) return;
 +  auto isolate = reinterpret_cast<internal::Isolate*>(args.GetIsolate());
 +  auto heap = isolate->heap();
-+  harness.HarnessBegin("GC", static_cast<double>(heap->gc_count()), "time.gc",
++  harness.HarnessBegin("GC", static_cast<double>(heap->gc_count()), "time.stw",
 +                       static_cast<double>(heap->total_gc_time_ms()));
 +}
 +
@@ -62,7 +62,7 @@ index 8c3997f24b8..eb4b04aebd3 100644
 +  if (!i::v8_flags.harness) return;
 +  auto isolate = reinterpret_cast<internal::Isolate*>(args.GetIsolate());
 +  auto heap = isolate->heap();
-+  harness.HarnessEnd("GC", static_cast<double>(heap->gc_count()), "time.gc",
++  harness.HarnessEnd("GC", static_cast<double>(heap->gc_count()), "time.stw",
 +                     static_cast<double>(heap->total_gc_time_ms()));
 +}
 +
