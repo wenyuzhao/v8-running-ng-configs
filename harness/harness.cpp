@@ -66,8 +66,8 @@ private:
     }
 
     void Print() {
-        if (results_.find("time") != results_.end() && results_.find("time.gc") != results_.end()) {
-            results_["time.mu"] = results_["time"] - results_["time.gc"];
+        if (results_.find("time") != results_.end() && results_.find("time.stw") != results_.end()) {
+            results_["time.other"] = results_["time"] - results_["time.stw"];
         }
         cout << "============================ MMTk Statistics Totals ============================" << endl;
         for (auto& x : results_) cout << x.first << TAB;
